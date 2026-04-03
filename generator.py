@@ -17,7 +17,7 @@ if os.getenv("OPENAI_API_KEY"):
 
 VALUE_PROP_SUMMARIES = {
     "total_cost_of_care_reduction": {
-        "short": "reducing total behavioral health spend by improving in-network utilization",
+        "short": "reducing behavioral health spend by improving in-network utilization",
         "diagnostic_focus": "utilization, spend, plan value, and benefit tradeoffs",
     },
     "eap_upgrade": {
@@ -25,12 +25,12 @@ VALUE_PROP_SUMMARIES = {
         "diagnostic_focus": "continuity of care, engagement beyond first touch, and whether the current model is enough",
     },
     "workforce_productivity": {
-        "short": "improving workforce performance by helping employees access care faster and stay engaged at work",
-        "diagnostic_focus": "absenteeism, turnover, performance friction, and workforce strain",
+        "short": "improving workforce performance by helping people access care faster and stay engaged at work",
+        "diagnostic_focus": "absenteeism, turnover, attendance pressure, and workforce strain",
     },
     "employee_access_experience": {
-        "short": "making it easier for employees to access affordable, quality mental health care quickly",
-        "diagnostic_focus": "where access breaks down, which populations struggle most, and whether employees can actually use the benefit",
+        "short": "making it easier for people to access affordable, quality mental health care quickly",
+        "diagnostic_focus": "where access breaks down, which populations struggle most, and whether people can actually use the benefit",
     },
 }
 
@@ -49,110 +49,137 @@ def _generate_subject_line(account: AccountProfile, top_match: ValuePropMatch) -
     company = account.company
 
     if top_match.value_prop_id == "total_cost_of_care_reduction":
-        return f"{company}: behavioral health access + utilization"
+        return f"Thinking about behavioral health spend at {company}"
     if top_match.value_prop_id == "eap_upgrade":
         return f"{company}: mental health support beyond EAP"
     if top_match.value_prop_id == "workforce_productivity":
-        return f"{company}: mental health and workforce stability"
-    return f"{company}: improving mental health access for employees"
+        return f"How {company} is handling workforce strain"
+    return f"Making mental health support easier to use at {company}"
 
 
-def _build_personalization_hooks(account: AccountProfile) -> List[str]:
-    hooks: List[str] = []
-
-    industry = _safe_lower(account.industry)
-    notes = _safe_lower(account.notes)
-
-    if "health system" in industry:
-        hooks.append("the scale of your care footprint")
-    elif "university" in industry:
-        hooks.append("the mix of staff and student employees")
-    elif "transportation" in industry or "logistics" in industry:
-        hooks.append("the reality of a distributed operational workforce")
-    elif "forestry" in industry or "natural resources" in industry:
-        hooks.append("the challenge of supporting a field-based workforce")
-    elif "senior living" in industry or "healthcare" in industry:
-        hooks.append("the strain that comes with a high-turnover care workforce")
-    elif account.industry:
-        hooks.append(account.industry)
-
-    if account.us_employees:
-        if account.us_employees >= 10000:
-            hooks.append("the scale of the employee population")
-        elif account.us_employees >= 3000:
-            hooks.append("the size of the workforce")
-
-    if "midwest" in notes:
-        hooks.append("a footprint spread across the Midwest")
-    if "student employees" in notes:
-        hooks.append("a mixed employee population")
-    if "merger" in notes or "integrating two separate benefits programs" in notes:
-        hooks.append("benefits integration after a merger")
-    if "field-based" in notes:
-        hooks.append("a field-based workforce")
-    if "limited internet access" in notes:
-        hooks.append("limited internet access during shifts")
-    if "high-turnover" in notes or "turnover" in notes:
-        hooks.append("high-turnover roles")
-    if "24/7 operations" in notes:
-        hooks.append("24/7 operations")
-    if "distribution centers" in notes:
-        hooks.append("a workforce spread across many sites")
-    if "eap" in notes:
-        hooks.append("an existing EAP model")
-    if "limited benefits budget" in notes:
-        hooks.append("a tighter benefits budget")
-
-    deduped: List[str] = []
-    for hook in hooks:
-        if hook not in deduped:
-            deduped.append(hook)
-
-    return deduped[:3]
-
-
-def _build_context_translation(account: AccountProfile, top_match: ValuePropMatch) -> str:
+def _opening_observation(account: AccountProfile, top_match: ValuePropMatch) -> str:
     notes = _safe_lower(account.notes)
     industry = _safe_lower(account.industry)
-
-    if top_match.value_prop_id == "workforce_productivity":
-        if "high-turnover" in notes or "turnover" in notes:
-            return "mental health may be showing up less as a standalone benefit issue and more through turnover and workforce strain"
-        if "24/7 operations" in notes or "distribution centers" in notes:
-            return "delayed access to care may be creating downstream drag across a workforce that has to stay operational"
-        if "field-based" in notes:
-            return "support may be harder to translate into consistent workforce stability when people are not desk-based"
-        return "mental health support may be tied more closely to attendance, retention, and day-to-day performance than it looks on paper"
 
     if top_match.value_prop_id == "total_cost_of_care_reduction":
+        if "health system" in industry and ("midwest" in notes or "hospitals" in notes or "clinics" in notes):
+            return "Given the size and spread across hospitals and clinics"
         if "merger" in notes or "benefits programs" in notes:
-            return "the harder question may be whether behavioral health is being evaluated as part of broader benefits efficiency, not just employee support"
+            return "With benefits integration happening after the merger"
         if account.us_employees and account.us_employees >= 10000:
-            return "one of the harder parts of behavioral health benefits may not be offering support, but making sure people can actually find in-network care quickly and use it consistently"
-        return "behavioral health may matter less as a coverage question and more as a utilization one"
+            return "At your scale"
+        return "Given the size of the workforce"
 
     if top_match.value_prop_id == "eap_upgrade":
         if "eap" in notes and "modernizing" in notes:
-            return "the question may be less whether support exists and more whether the current model is deep enough to drive ongoing care"
+            return "With an in-house EAP already in place and modernization on the table"
         if "eap" in notes:
-            return "the current support model may be useful for first-touch help, but not necessarily for sustained engagement"
-        return "traditional support models often create shallow engagement without much continuity of care"
+            return "With an existing EAP already in place"
+        return "Given how most support models work in practice"
 
-    if "limited internet access" in notes:
-        return "the real challenge may be less about having a benefit in place and more about whether people can actually access care when they need it"
+    if top_match.value_prop_id == "workforce_productivity":
+        if "24/7 operations" in notes and "distribution centers" in notes:
+            return "Running 24/7 operations across that many sites"
+        if "field-based" in notes and "limited internet access" in notes:
+            return "With most of the team in the field and limited connectivity during shifts"
+        if "high-turnover" in notes or "turnover" in notes:
+            return "With a workforce that sees a lot of turnover"
+        return "Given the reality of the workforce"
+
     if "student employees" in notes:
-        return "mixed employee populations often make it harder to deliver a consistent experience across different groups"
-    if "distribution centers" in notes or "nationwide" in notes or "midwest" in notes:
-        return "distributed workforces often have support on paper but uneven real-world access across sites"
-    if "education" in industry or "university" in industry:
-        return "the bigger question may be whether people can actually find and use care quickly when they need it"
-    return "the gap may be less about offering support and more about whether people can actually find and use care quickly"
+        return "Given the mix of staff and student employees"
+    if "limited internet access" in notes:
+        return "With limited internet access during shifts"
+    if "distribution centers" in notes or "nationwide" in notes:
+        return "With people spread across that many sites"
+    return "Given the setup of the workforce"
 
 
-def _build_discovery_questions(
-    account: AccountProfile,
-    top_match: ValuePropMatch,
-) -> List[str]:
+def _problem_interpretation(account: AccountProfile, top_match: ValuePropMatch) -> str:
+    notes = _safe_lower(account.notes)
+    industry = _safe_lower(account.industry)
+
+    if top_match.value_prop_id == "total_cost_of_care_reduction":
+        if "health system" in industry:
+            return "I'd imagine keeping behavioral health spend under control while still making access easy isn't straightforward"
+        if "merger" in notes or "benefits programs" in notes:
+            return "I'd imagine the harder part is figuring out how behavioral health fits into a more efficient combined benefits model"
+        return "I'd imagine the real question is whether people are actually using the benefit in a way that creates plan value"
+
+    if top_match.value_prop_id == "eap_upgrade":
+        if "modernizing" in notes and "eap" in notes:
+            return "I'd imagine the question is less whether support exists and more whether the current model is deep enough to hold up over time"
+        if "eap" in notes:
+            return "I'd imagine the gap is less first-touch support and more whether people actually stay engaged long enough to get meaningful care"
+        return "I'd imagine the issue is whether support goes deep enough to create real continuity of care"
+
+    if top_match.value_prop_id == "workforce_productivity":
+        if "24/7 operations" in notes or "distribution centers" in notes:
+            return "I'd imagine attendance and turnover can get uneven pretty quickly, especially if support isn't easy to access across shifts"
+        if "field-based" in notes and "limited internet access" in notes:
+            return "I'd imagine it's hard to keep productivity steady if accessing support isn't straightforward during a shift"
+        if "high-turnover" in notes or "turnover" in notes:
+            return "I'd imagine mental health shows up less as a benefits issue and more through turnover and day-to-day strain"
+        return "I'd imagine mental health support is showing up more through attendance and retention than it does in benefits language"
+
+    if "student employees" in notes:
+        return "I'd imagine making support feel consistent across different groups isn't straightforward"
+    if "limited internet access" in notes:
+        return "I'd imagine the harder part is whether people can realistically access care in the moment they need it"
+    if "distribution centers" in notes or "nationwide" in notes:
+        return "I'd imagine access gets uneven pretty quickly across locations and schedules"
+    return "I'd imagine the gap is less whether support exists and more whether people can actually use it"
+
+
+def _reframe_line(account: AccountProfile, top_match: ValuePropMatch, is_icp: bool) -> str:
+    notes = _safe_lower(account.notes)
+
+    if top_match.value_prop_id == "total_cost_of_care_reduction":
+        if is_icp:
+            return "The gap is usually not coverage - it's whether people find and use the right in-network care in practice."
+        return "What tends to get missed is whether the benefit is actually driving the kind of utilization the plan is supposed to support."
+
+    if top_match.value_prop_id == "eap_upgrade":
+        if is_icp:
+            return "The issue usually isn't whether support exists - it's whether the model is strong enough to move people from first touch into ongoing care."
+        return "The issue is usually less access to a resource and more whether that resource is enough on its own."
+
+    if top_match.value_prop_id == "workforce_productivity":
+        if "field-based" in notes or "distribution centers" in notes or "24/7 operations" in notes:
+            return "In setups like that, the issue usually isn't whether support exists - it's whether people can actually access it in a way that fits how they work."
+        return "What tends to happen is that delayed access shows up operationally long before anyone calls it a benefits problem."
+
+    if is_icp:
+        return "In a lot of cases, the gap isn't whether support exists - it's whether people actually find and follow through with care when they need it."
+    return "What tends to get in the way isn't the benefit on paper - it's whether people can realistically use it when they need it."
+
+
+def _close_question(account: AccountProfile, top_match: ValuePropMatch, is_icp: bool) -> str:
+    notes = _safe_lower(account.notes)
+
+    if top_match.value_prop_id == "total_cost_of_care_reduction":
+        if "merger" in notes:
+            return "How are you thinking about behavioral health as part of the broader benefits integration work?"
+        return "How are you currently tracking where behavioral health spend is actually coming from across your sites?"
+
+    if top_match.value_prop_id == "eap_upgrade":
+        if "modernizing" in notes:
+            return "As you think about modernizing the program, what feels most in need of change right now?"
+        return "How are you evaluating whether the current support model is actually enough?"
+
+    if top_match.value_prop_id == "workforce_productivity":
+        if "field-based" in notes:
+            return "Do you see mental health-related absences or turnover clustering more in certain crews or roles?"
+        if "distribution centers" in notes or "24/7 operations" in notes:
+            return "Are there specific sites or teams where that strain is showing up more than others right now?"
+        return "Is workforce strain showing up more through absenteeism, turnover, or something else right now?"
+
+    if "student employees" in notes:
+        return "What's been the clearest sign on your end that access isn't working the way it should?"
+    return "Where does access seem to break down most today?"
+
+
+def _build_discovery_questions(account: AccountProfile, top_match: ValuePropMatch) -> List[str]:
     notes = _safe_lower(account.notes)
 
     if top_match.value_prop_id == "workforce_productivity":
@@ -212,50 +239,20 @@ def generate_fallback_email(
     top_match = matches[0]
     first_name = _first_name(account.contact)
     greeting = f"Hi {first_name}," if first_name else "Hi,"
-    company = account.company
-
-    hooks = _build_personalization_hooks(account)
-    hook_text = ", ".join(hooks) if hooks else "your current workforce and benefits context"
-    translation = _build_context_translation(account, top_match)
 
     subject = _generate_subject_line(account, top_match)
+    opening = _opening_observation(account, top_match)
+    problem = _problem_interpretation(account, top_match)
+    reframe = _reframe_line(account, top_match, is_icp)
+    close = _close_question(account, top_match, is_icp)
     questions = _build_discovery_questions(account, top_match)
 
-    if top_match.value_prop_id == "total_cost_of_care_reduction":
-        body = (
-            f"{greeting}\n\n"
-            f"With {hook_text}, I'd guess {translation}. "
-            f"For employers at this scale, that usually shows up as a utilization issue, not just a coverage issue.\n\n"
-            f"Rula helps employers improve access to quality in-network mental health care in a way that can make the benefit work harder without adding more complexity. "
-            f"Is that something your team is looking at right now?"
-        )
-
-    elif top_match.value_prop_id == "eap_upgrade":
-        body = (
-            f"{greeting}\n\n"
-            f"With {hook_text}, I'd guess {translation}. "
-            f"A lot of teams already have support in place, but the real gap is whether people stay engaged long enough to get meaningful care.\n\n"
-            f"Rula gives employers a stronger path from first touch to ongoing treatment. "
-            f"Is that something you're evaluating right now?"
-        )
-
-    elif top_match.value_prop_id == "workforce_productivity":
-        body = (
-            f"{greeting}\n\n"
-            f"{company}'s {hook_text} makes me think {translation}. "
-            f"In environments like this, delayed access to care tends to show up operationally, not just emotionally.\n\n"
-            f"Rula helps employers make it easier for people to get care quickly, which can matter when the goal is stability as much as support. "
-            f"Is that a live conversation for your team?"
-        )
-
-    else:
-        body = (
-            f"{greeting}\n\n"
-            f"With {hook_text}, I'd guess {translation}. "
-            f"A lot of teams have benefits in place, but still run into friction when people actually try to find and use care.\n\n"
-            f"Rula helps employers make care easier to access quickly through a large in-network provider base. "
-            f"Curious whether access or follow-through is more of the issue on your side."
-        )
+    body = (
+        f"{greeting}\n\n"
+        f"{opening}, {problem}.\n\n"
+        f"{reframe}\n\n"
+        f"{close}"
+    )
 
     return {
         "email_subject": subject,
@@ -270,8 +267,10 @@ def generate_with_llm(
     icp_reasons: List[str],
     matches: List[ValuePropMatch],
 ) -> Dict[str, Any]:
+    fallback = generate_fallback_email(account, is_icp, icp_reasons, matches)
+
     if client is None:
-        return generate_fallback_email(account, is_icp, icp_reasons, matches)
+        return fallback
 
     top_match = matches[0]
 
@@ -283,6 +282,7 @@ def generate_with_llm(
         },
         "top_value_prop": top_match.model_dump(),
         "value_prop_definitions": VALUE_PROP_SUMMARIES,
+        "fallback_email_style_reference": fallback,
     }
 
     system_prompt = """
@@ -294,8 +294,22 @@ Write:
 
 The message should feel relevant, emotionally intelligent, commercially aware, and naturally written by a sharp AE.
 
+CORE RULE:
+The email should sound like someone who has seen this kind of problem before - not like someone summarizing account attributes.
+
 EMAIL GOAL:
 Earn a reply by showing a strong point of view based on the account context.
+
+TONE MODES:
+If the account is strong ICP:
+- be more directional
+- sound confident
+- make a sharper inference
+
+If the account is not strong ICP:
+- be more diagnostic
+- make fewer assumptions
+- probe more than pitch
 
 EMAIL STRUCTURE:
 1. Opening
@@ -304,11 +318,10 @@ EMAIL STRUCTURE:
 - Use soft language when appropriate (e.g., "I'd imagine", "I'd guess")
 - Do not list attributes or restate structured data
 - Do not sound analytical or overly formal
-- Let the sentence breathe slightly and avoid overly compressed phrasing
+- Let the sentence breathe slightly
 
 2. Interpretation
 - Translate that observation into one likely business, workforce, or benefits problem
-- Add light nuance (e.g., "especially across different groups", "in practice")
 - Keep it grounded and human
 - Do not over-explain
 
@@ -319,27 +332,15 @@ EMAIL STRUCTURE:
 
 4. Close
 - End with one low-friction, curiosity-driven question
-- Should feel easy to respond to
+- No meeting ask
 - No pressure language
-- No CTA asking for time or a meeting
-
-TONE:
-- human
-- slightly conversational
-- warm but not soft
-- confident but not loud
-- commercially aware
-- low-pressure
-- natural rhythm
 
 STYLE RULES:
 - 75-120 words
 - Use contractions
 - Prefer "teams" over "organizations"
 - Prefer "people" over "employees" when natural
-- Add light connective language for flow
-- Avoid sounding too perfect or overly edited
-- The email should feel like a thoughtful note, not a template
+- Keep the rhythm human, not over-edited
 
 DO NOT:
 - invent facts
@@ -348,19 +349,10 @@ DO NOT:
 - explain multiple value props
 - summarize the whole account
 - sound like a consultant, product page, or AI system
-
-DO NOT USE THESE PHRASES:
-- "hope you're well"
-- "noticed"
-- "worth comparing notes"
-- "how your team is thinking about"
-- "behavioral health value"
-- "it felt worth reaching out"
-- "depending on where your team is feeling the most pressure"
-- "I wanted to reach out"
-- "there may be a fit around"
-- "open to learning more"
-- "just reaching out"
+- use "we've seen", "we often see", "many organizations", or "in situations like this"
+- use "worth comparing notes"
+- use "it felt worth reaching out"
+- use "there may be a fit around"
 
 DISCOVERY QUESTION RULES:
 Write exactly 3 strong AE discovery questions.
@@ -382,12 +374,6 @@ DISCOVERY QUESTION CONSTRAINTS:
 - No "what are your priorities?"
 - No vague, broad questions
 
-VALUE PROP GUIDANCE:
-- Workforce productivity -> absenteeism, turnover, workforce strain
-- Total cost -> utilization, spend efficiency, tradeoffs
-- EAP -> engagement depth, continuity, replace vs supplement
-- Access -> where access breaks down, who struggles, follow-through
-
 OUTPUT:
 Return valid JSON with exactly these keys:
 {
@@ -405,31 +391,36 @@ Lead with the top matched value proposition only.
 Stay grounded in the actual facts provided.
 Make the email sound human, specific, and low-pressure.
 
+Use the fallback example only as a style guardrail, not as a template to copy.
+
 Input:
 {json.dumps(prompt_payload, indent=2)}
 """
 
-    response = client.chat.completions.create(
-        model="gpt-4.1-mini",
-        temperature=0.5,
-        response_format={"type": "json_object"},
-        messages=[
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": user_prompt},
-        ],
-    )
+    try:
+        response = client.chat.completions.create(
+            model="gpt-4.1-mini",
+            temperature=0.5,
+            response_format={"type": "json_object"},
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_prompt},
+            ],
+        )
 
-    content = response.choices[0].message.content
-    parsed = json.loads(content)
+        content = response.choices[0].message.content
+        parsed = json.loads(content)
 
-    questions = parsed.get("discovery_questions", [])
-    if not isinstance(questions, list) or len(questions) != 3:
-        questions = _build_discovery_questions(account, top_match)
+        questions = parsed.get("discovery_questions", [])
+        if not isinstance(questions, list) or len(questions) != 3:
+            questions = _build_discovery_questions(account, top_match)
 
-    fallback = generate_fallback_email(account, is_icp, icp_reasons, matches)
+        return {
+            "email_subject": parsed.get("email_subject", fallback["email_subject"]),
+            "email_body": parsed.get("email_body", fallback["email_body"]),
+            "discovery_questions": questions,
+        }
 
-    return {
-        "email_subject": parsed.get("email_subject", fallback["email_subject"]),
-        "email_body": parsed.get("email_body", fallback["email_body"]),
-        "discovery_questions": questions,
-    }
+    except Exception as e:
+        print(f"LLM failed, falling back: {e}")
+        return fallback
