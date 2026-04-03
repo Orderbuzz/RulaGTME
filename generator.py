@@ -79,7 +79,7 @@ def _opening_observation(account: AccountProfile, top_match: ValuePropMatch) -> 
 
     if top_match.value_prop_id == "workforce_productivity":
         if "24/7 operations" in notes and "distribution centers" in notes:
-            return "With Atlas running 24/7 across so many distribution centers" if account.company == "Atlas Logistics Group" else "Running 24/7 operations across that many sites"
+            return "With Atlas running 24/7 across 30+ distribution centers" if account.company == "Atlas Logistics Group" else "Running 24/7 operations across that many sites"
         if "field-based" in notes and "limited internet access" in notes:
             return "With so many folks working in the field and limited internet during shifts"
         if "high-turnover" in notes or "turnover" in notes:
@@ -115,7 +115,7 @@ def _problem_interpretation(account: AccountProfile, top_match: ValuePropMatch) 
 
     if top_match.value_prop_id == "workforce_productivity":
         if "24/7 operations" in notes or "distribution centers" in notes:
-            return "I'd guess even small disruptions in attendance or engagement ripple quickly through operations"
+            return "I'd guess even small gaps in attendance or focus can ripple quickly through operations"
         if "field-based" in notes and "limited internet access" in notes:
             return "I'd guess keeping productivity steady gets tricky when people can't easily access support that fits their day-to-day"
         if "high-turnover" in notes or "turnover" in notes:
@@ -129,6 +129,48 @@ def _problem_interpretation(account: AccountProfile, top_match: ValuePropMatch) 
     if "distribution centers" in notes or "nationwide" in notes:
         return "I'd imagine access gets uneven pretty quickly across locations and schedules"
     return "I'd imagine the gap is less whether support exists and more whether people can actually use it"
+
+
+def _operational_consequence_line(account: AccountProfile, top_match: ValuePropMatch, is_icp: bool) -> str:
+    notes = _safe_lower(account.notes)
+    industry = _safe_lower(account.industry)
+
+    if top_match.value_prop_id == "workforce_productivity":
+        if "distribution centers" in notes or "24/7 operations" in notes:
+            return "That's when you start to see certain shifts run short, stronger sites absorb more load, or managers spend more time patching coverage than they should."
+        if "field-based" in notes and "limited internet access" in notes:
+            return "In setups like that, it usually shows up through attendance dips, uneven crew coverage, or extra load landing on the people who are still available."
+        if "high-turnover" in notes or "turnover" in notes or "cnas" in notes or "lpns" in notes:
+            return "That usually shows up as teams getting stretched thinner, new hires cycling through too fast, and the most reliable people carrying extra weight."
+        return "That's usually where you start seeing attendance slip, coverage get uneven, or stronger teams absorb more load than they should."
+
+    if top_match.value_prop_id == "employee_access_experience":
+        if "student employees" in notes:
+            return "That usually means one group can navigate support pretty easily while another drops off somewhere between searching for care and actually booking it."
+        if "limited internet access" in notes:
+            return "What that looks like in practice is people delaying care, dropping off mid-process, or never using the benefit when they actually need it."
+        if "distribution centers" in notes or "nationwide" in notes or "midwest" in notes:
+            return "What that usually creates is a benefit that looks consistent on paper but lands very differently depending on site, schedule, or geography."
+        return "What that usually creates is a gap between having support available and people actually being able to use it when they need it."
+
+    if top_match.value_prop_id == "total_cost_of_care_reduction":
+        if "health system" in industry:
+            return "That can leave the plan carrying more avoidable spend than it should while local teams still feel like access is inconsistent."
+        if "merger" in notes or "benefits programs" in notes:
+            return "That usually shows up as uneven utilization patterns, duplicated plan complexity, or a lot of uncertainty around what's actually working."
+        return "That usually leaves teams looking at spend and support separately when the real issue is how the benefit gets used in practice."
+
+    if top_match.value_prop_id == "eap_upgrade":
+        if "eap" in notes and "modernizing" in notes:
+            return "That usually shows up as a lot of first-touch activity without much confidence that people are actually getting to sustained care."
+        if "eap" in notes:
+            return "What that often creates is a support model that gets used early but doesn't carry enough continuity to change much downstream."
+        return "That usually creates a support model that's easy to offer but harder to rely on when people need more than a first conversation."
+
+    if not is_icp:
+        return "That usually surfaces as uneven follow-through, local workarounds, or support that exists on paper but doesn't translate cleanly in practice."
+
+    return "That usually surfaces as uneven adoption, inconsistent follow-through, or a benefit that doesn't land the same way across the business."
 
 
 def _reframe_line(account: AccountProfile, top_match: ValuePropMatch, is_icp: bool) -> str:
@@ -146,10 +188,10 @@ def _reframe_line(account: AccountProfile, top_match: ValuePropMatch, is_icp: bo
 
     if top_match.value_prop_id == "workforce_productivity":
         if "field-based" in notes and "limited internet access" in notes:
-            return "In setups like that, it usually shows up through attendance or turnover before anyone calls it a benefits issue."
+            return "In setups like that, the real question is whether support is accessible enough to matter in the moment people need it."
         if "distribution centers" in notes or "24/7 operations" in notes:
-            return "What usually drives that is whether people can actually access support in a way that fits how they work day to day."
-        return "What tends to happen is that delayed access shows up operationally long before anyone calls it a benefits problem."
+            return "The real question is whether support fits the way people actually work across shifts, sites, and day-to-day operating pressure."
+        return "What tends to matter is whether support is accessible enough to change what shows up operationally."
 
     if is_icp:
         return "In a lot of cases, the gap isn't whether support exists - it's whether people actually find and follow through with care when they need it."
@@ -171,7 +213,7 @@ def _close_question(account: AccountProfile, top_match: ValuePropMatch, is_icp: 
 
     if top_match.value_prop_id == "workforce_productivity":
         if "field-based" in notes:
-            return "Have you noticed if mental health-related productivity issues tend to hit certain crews or roles harder?"
+            return "Have you seen this hit certain crews or roles harder than others?"
         if "distribution centers" in notes or "24/7 operations" in notes:
             return "Are there certain sites or shifts where this shows up more than others right now?"
         return "Is workforce strain showing up more through absenteeism, turnover, or something else right now?"
@@ -193,8 +235,9 @@ def _build_discovery_questions(account: AccountProfile, top_match: ValuePropMatc
             q1 = "How are mental health challenges currently impacting attendance or turnover among your field teams?"
             q2 = "Are there specific groups within your workforce where productivity strain linked to mental health is most visible?"
         elif "distribution centers" in notes or "24/7 operations" in notes:
-            q1 = "How are mental health challenges currently affecting attendance or turnover across your distribution centers?"
-            q2 = "Which types of sites or shifts seem to experience the highest operational strain related to workforce mental health?"
+            q1 = "How are mental health-related issues currently impacting attendance or turnover at your busiest distribution centers?"
+            q2 = "Are there specific shifts or locations where workforce strain linked to mental health challenges is most visible?"
+            q3 = "When evaluating mental health support options, how do you balance faster access to care with measurable improvements in workforce productivity?"
 
         return [q1, q2, q3]
 
@@ -245,13 +288,15 @@ def generate_fallback_email(
     subject = _generate_subject_line(account, top_match)
     opening = _opening_observation(account, top_match)
     problem = _problem_interpretation(account, top_match)
+    consequence = _operational_consequence_line(account, top_match, is_icp)
     reframe = _reframe_line(account, top_match, is_icp)
     close = _close_question(account, top_match, is_icp)
     questions = _build_discovery_questions(account, top_match)
 
     body = (
         f"{greeting}\n\n"
-        f"{opening}, {problem}.\n\n"
+        f"{opening}, {problem}.\n"
+        f"{consequence}\n\n"
         f"{reframe}\n\n"
         f"{close}"
     )
@@ -326,18 +371,23 @@ EMAIL STRUCTURE:
 - Keep it grounded and human
 - Do not over-explain
 
-3. Reframe
-- Explain how the problem actually shows up operationally before introducing any solution framing
+3. Operational consequence
+- Describe one concrete way the problem shows up inside the business
+- Make it visual and real
+- Examples: shifts running short, managers patching coverage, certain teams carrying extra load, uneven follow-through, site-to-site inconsistency
+
+4. Reframe
+- Explain what the real issue usually is beneath the surface
 - Introduce the top matched value proposition indirectly
 - Focus on one wedge only
 
-4. Close
+5. Close
 - End with one low-friction, curiosity-driven question
 - No meeting ask
 - No pressure language
 
 STYLE RULES:
-- 75-120 words
+- 85-130 words
 - Use contractions
 - Prefer "teams" over "organizations"
 - Prefer "people" over "employees" when natural
