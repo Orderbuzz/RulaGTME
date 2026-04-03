@@ -53,7 +53,7 @@ def _generate_subject_line(account: AccountProfile, top_match: ValuePropMatch) -
     if top_match.value_prop_id == "eap_upgrade":
         return f"{company}: mental health support beyond EAP"
     if top_match.value_prop_id == "workforce_productivity":
-        return f"How {company} is handling workforce strain"
+        return f"How {company} is managing workforce strain"
     return f"Making mental health support easier to use at {company}"
 
 
@@ -79,9 +79,9 @@ def _opening_observation(account: AccountProfile, top_match: ValuePropMatch) -> 
 
     if top_match.value_prop_id == "workforce_productivity":
         if "24/7 operations" in notes and "distribution centers" in notes:
-            return "Running 24/7 operations across that many sites"
+            return "With Atlas running 24/7 across so many distribution centers" if account.company == "Atlas Logistics Group" else "Running 24/7 operations across that many sites"
         if "field-based" in notes and "limited internet access" in notes:
-            return "With most of the team in the field and limited connectivity during shifts"
+            return "With so many folks working in the field and limited internet during shifts"
         if "high-turnover" in notes or "turnover" in notes:
             return "With a workforce that sees a lot of turnover"
         return "Given the reality of the workforce"
@@ -115,9 +115,9 @@ def _problem_interpretation(account: AccountProfile, top_match: ValuePropMatch) 
 
     if top_match.value_prop_id == "workforce_productivity":
         if "24/7 operations" in notes or "distribution centers" in notes:
-            return "I'd imagine attendance and turnover can get uneven pretty quickly, especially if support isn't easy to access across shifts"
+            return "I'd guess even small disruptions in attendance or engagement ripple quickly through operations"
         if "field-based" in notes and "limited internet access" in notes:
-            return "I'd imagine it's hard to keep productivity steady if accessing support isn't straightforward during a shift"
+            return "I'd guess keeping productivity steady gets tricky when people can't easily access support that fits their day-to-day"
         if "high-turnover" in notes or "turnover" in notes:
             return "I'd imagine mental health shows up less as a benefits issue and more through turnover and day-to-day strain"
         return "I'd imagine mental health support is showing up more through attendance and retention than it does in benefits language"
@@ -145,8 +145,10 @@ def _reframe_line(account: AccountProfile, top_match: ValuePropMatch, is_icp: bo
         return "The issue is usually less access to a resource and more whether that resource is enough on its own."
 
     if top_match.value_prop_id == "workforce_productivity":
-        if "field-based" in notes or "distribution centers" in notes or "24/7 operations" in notes:
-            return "In setups like that, the issue usually isn't whether support exists - it's whether people can actually access it in a way that fits how they work."
+        if "field-based" in notes and "limited internet access" in notes:
+            return "In setups like that, it usually shows up through attendance or turnover before anyone calls it a benefits issue."
+        if "distribution centers" in notes or "24/7 operations" in notes:
+            return "What usually drives that is whether people can actually access support in a way that fits how they work day to day."
         return "What tends to happen is that delayed access shows up operationally long before anyone calls it a benefits problem."
 
     if is_icp:
@@ -169,9 +171,9 @@ def _close_question(account: AccountProfile, top_match: ValuePropMatch, is_icp: 
 
     if top_match.value_prop_id == "workforce_productivity":
         if "field-based" in notes:
-            return "Do you see mental health-related absences or turnover clustering more in certain crews or roles?"
+            return "Have you noticed if mental health-related productivity issues tend to hit certain crews or roles harder?"
         if "distribution centers" in notes or "24/7 operations" in notes:
-            return "Are there specific sites or teams where that strain is showing up more than others right now?"
+            return "Are there certain sites or shifts where this shows up more than others right now?"
         return "Is workforce strain showing up more through absenteeism, turnover, or something else right now?"
 
     if "student employees" in notes:
@@ -183,16 +185,16 @@ def _build_discovery_questions(account: AccountProfile, top_match: ValuePropMatc
     notes = _safe_lower(account.notes)
 
     if top_match.value_prop_id == "workforce_productivity":
-        q1 = "Is mental health showing up more as an absenteeism issue, a turnover issue, or both?"
+        q1 = "How are mental health challenges currently impacting attendance or turnover?"
         q2 = "Are there specific workforce segments or sites where the problem is more visible?"
-        q3 = "When you evaluate mental health support, are you optimizing more for employee experience or workforce stability?"
+        q3 = "When considering solutions, how do you weigh ease of access to mental health care against the goal of reducing absenteeism or turnover?"
 
         if "field-based" in notes:
-            q2 = "Do field-based employees experience different barriers to support than more centralized teams?"
+            q1 = "How are mental health challenges currently impacting attendance or turnover among your field teams?"
+            q2 = "Are there specific groups within your workforce where productivity strain linked to mental health is most visible?"
         elif "distribution centers" in notes or "24/7 operations" in notes:
-            q2 = "Are certain sites or operating environments harder to support consistently than others?"
-        elif "cnas" in notes or "lpns" in notes:
-            q2 = "Are there particular care roles where stress, turnover, or absenteeism makes mental health support more operationally important?"
+            q1 = "How are mental health challenges currently affecting attendance or turnover across your distribution centers?"
+            q2 = "Which types of sites or shifts seem to experience the highest operational strain related to workforce mental health?"
 
         return [q1, q2, q3]
 
@@ -317,7 +319,6 @@ EMAIL STRUCTURE:
 - It should feel like something you would say out loud, not write in a report
 - Use soft language when appropriate (e.g., "I'd imagine", "I'd guess")
 - Do not list attributes or restate structured data
-- Do not sound analytical or overly formal
 - Let the sentence breathe slightly
 
 2. Interpretation
@@ -326,9 +327,9 @@ EMAIL STRUCTURE:
 - Do not over-explain
 
 3. Reframe
+- Explain how the problem actually shows up operationally before introducing any solution framing
 - Introduce the top matched value proposition indirectly
-- Focus on how this shows up in real life, not abstract value
-- Stay focused on one wedge only
+- Focus on one wedge only
 
 4. Close
 - End with one low-friction, curiosity-driven question
