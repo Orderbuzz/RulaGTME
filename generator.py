@@ -433,7 +433,7 @@ Return valid JSON with exactly these keys:
 
     response = client.chat.completions.create(
         model="gpt-4.1-mini",
-        temperature=0.4,
+        temperature=0.5,
         response_format={"type": "json_object"},
         messages=[
             {"role": "system", "content": system_prompt},
