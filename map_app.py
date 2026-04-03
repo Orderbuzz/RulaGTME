@@ -29,6 +29,9 @@ if st.button("Run MAP Verification"):
         st.write(f"**Verdict:** {result['verdict']}")
         st.write(f"**Confidence:** {result['confidence']}")
         st.write(f"**Score:** {result['score']}")
+        st.write(f"**Score Band:** {result['score_band']}")
+        st.write(f"**Evidence Tier:** {result['evidence_tier']}")
+        st.write(f"**Forecast Eligible:** {result['forecast_eligible']}")
 
         st.subheader("Structured Extraction")
         st.json(result["structured_extraction"])

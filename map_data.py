@@ -12,7 +12,7 @@ MAP_RUBRIC = [
         "title": "Strong commitment signals",
         "content": (
             "Strong signals include buyer-authored confirmation, explicit agreement to move forward, "
-            "specific campaign types, timeline by quarter or month, and a concrete next step."
+            "specific campaign types, timeline by quarter or month, and a buyer-confirmed next step."
         ),
     },
     {
@@ -28,7 +28,7 @@ MAP_RUBRIC = [
         "title": "Verification risk",
         "content": (
             "MAP data is used for quota and forecasting. False positives are costly. "
-            "Secondhand summaries should score lower than buyer-authored evidence."
+            "Secondhand summaries should score materially lower than buyer-authored evidence."
         ),
     },
 ]
